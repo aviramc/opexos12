@@ -1,0 +1,5 @@
+*.a
+*.o
+big-chanks
+linux-scalability
+cscope.out
