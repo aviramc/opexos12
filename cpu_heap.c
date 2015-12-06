@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <stdbool.h>
 #include "memory_allocator.h"
 #include "size_class.h"
@@ -12,14 +13,14 @@
 void removeSuperblockFromHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
     /* Assuming the heap is locked */
     /* TODO: when size class lock is available, it should be locked here or on the calling side */
-    size_class_t *size_class = &heap._sizeClassBytes[sizeClass_ix];
+    size_class_t *size_class = &(heap->_sizeClasses[sizeClass_ix]);
     size_t superblock_bytes_used = getBytesUsed(pSb);
 
-    assert(pSb->_pOwnerHeap == heap);
+    assert(pSb->_meta._pOwnerHeap == heap);
     assert(heap->_bytesAvailable >= SUPERBLOCK_SIZE);
     assert(heap->_bytesUsed >= superblock_bytes_used);
 
-    removeSuperblockFromHeap(size_class, pSb);
+    removeSuperBlock(size_class, pSb);
     pSb->_meta._pOwnerHeap = NULL;
 
      /* TODO: Should this be replaced with something more accurate? */
@@ -31,7 +32,7 @@ void removeSuperblockFromHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *p
 void addSuperblockToHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
     /* Assuming the heap is locked */
     /* TODO: when size class lock is available, it should be locked here or on the calling side */
-    size_class_t *size_class = &heap._sizeClassBytes[sizeClass_ix];
+    size_class_t *size_class = &(heap->_sizeClasses[sizeClass_ix]);
 
     insertSuperBlock(size_class, pSb);
     pSb->_meta._pOwnerHeap = heap;
@@ -43,7 +44,7 @@ void addSuperblockToHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
 
 void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     void *block = NULL;
-    cpuheap_t *heap = pSb->_pOwnerHeap;
+    cpuheap_t *heap = pSb->_meta._pOwnerHeap;
     size_t old_bytes_used = 0;
     size_t new_bytes_used = 0;
 
@@ -67,7 +68,7 @@ void freeBlockFromCurrentHeap(block_header_t *pBlock) {
     size_t new_bytes_used = 0;
 
     assert(NULL != superblock);
-    heap = superblock->_pOwnerHeap;
+    heap = superblock->_meta._pOwnerHeap;
     assert(NULL != heap);
 
     old_bytes_used = getBytesUsed(superblock);

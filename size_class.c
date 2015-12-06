@@ -8,10 +8,11 @@
 
 
 #include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
 #include <math.h>
 #include <errno.h>
-#include <bool.h>
+#include <stdbool.h>
 #include "memory_allocator.h"
 
 /* return true if a superblock is the only one in the list */
@@ -30,20 +31,20 @@ static void place_superblock(superblock_t *new, superblock_t *place_before);
  * assuming the superblock belongs to the sizeclass
  */
 void removeSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
-    superBlock *previous = NULL;
-    superBlock *next = NULL;
+    superblock_t *previous = NULL;
+    superblock_t *next = NULL;
 
     if (is_single(sizeClass, superBlock)) {
         sizeClass->_SBlkList._first = NULL;
     } else {
-        previous = superblock->_meta._pPrvSBlk;
-        next = superblock->_meta._pNxtSBlk;
+        previous = superBlock->_meta._pPrvSblk;
+        next = superBlock->_meta._pNxtSBlk;
 
         previous->_meta._pNxtSBlk = next;
-        next->_meta._pPrvSBlk = previous;
+        next->_meta._pPrvSblk = previous;
 
-        superblock->_meta._pPrvSBlk = NULL;
-        superblock->_meta._pNxtSBlk = NULL;
+        superBlock->_meta._pPrvSblk = NULL;
+        superBlock->_meta._pNxtSBlk = NULL;
     }
 }
 
@@ -59,7 +60,7 @@ void insertSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
         return;
     }
 
-    place_before = find_least_full_than(sizeClass, getfullness(superBlock));
+    place_before = find_least_full_than(sizeClass, getFullness(superBlock));
     assert(place_before != NULL);
     place_superblock(superBlock, place_before);
 }
@@ -68,14 +69,14 @@ void insertSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
 
 superblock_t *findAvailableSuperblock(size_class_t *sizeClass) {
     /* we assume here that the size class is locked */
-    superblock_t superblock = NULL;
+    superblock_t *superblock = NULL;
     unsigned int i = 0;
 
-    for (i = 0, superblock = sizeClass->_SBlkList;
+    for (i = 0, superblock = sizeClass->_SBlkList._first;
          i < sizeClass->_SBlkList._length;
          i++, superblock = superblock->_meta._pNxtSBlk) {
 
-        if (superblock._NoFreeBlks > 0) {
+        if (superblock->_meta._NoFreeBlks > 0) {
             return superblock;
         }
 
@@ -116,8 +117,8 @@ size_class_t *getSizeClassForSuperblock(superblock_t *pSb){
 
 static bool is_single(size_class_t *size_class, superblock_t *superblock)
 {
-    if ((superblock->_meta._pPrvSBlk == superblock->_meta._pNxtSBlk) &&
-        (superblock->_meta._pPrvSBlk == superblock)) {
+    if ((superblock->_meta._pPrvSblk == superblock->_meta._pNxtSBlk) &&
+        (superblock->_meta._pPrvSblk == superblock)) {
         assert(size_class->_SBlkList._first == superblock);
         return true;
     }
@@ -127,11 +128,11 @@ static bool is_single(size_class_t *size_class, superblock_t *superblock)
 static void init_superblock_list(size_class_t *sizeClass, superblock_t *first)
 {
     sizeClass->_SBlkList._first = first;
-    sizeClass->length = 1;
+    sizeClass->_SBlkList._length = 1;
 
     /* Double-linked list is always circular */
     first->_meta._pNxtSBlk = first;
-    first->_meta._pPrvSBlk = first;
+    first->_meta._pPrvSblk = first;
 }
 
 static superblock_t *find_least_full_than(size_class_t *sizeClass, double fullness)
@@ -144,28 +145,30 @@ static superblock_t *find_least_full_than(size_class_t *sizeClass, double fullne
     for (i = 0, found = sizeClass->_SBlkList._first;
          fullness < getFullness(found) && i < sizeClass->_SBlkList._length;
          i++, found = found->_meta._pNxtSBlk);
+
+    return found;
 }
 
 static void place_superblock(superblock_t *new, superblock_t *place_before)
 {
-    superblock_t * place_after = place_before->_meta._pPrvSBlk;
+    superblock_t * place_after = place_before->_meta._pPrvSblk;
 
-    assert(place_before->_pOwnerHeap == place_after->_pOwnerHeap)
+    assert(place_before->_meta._pOwnerHeap == place_after->_meta._pOwnerHeap);
 
     /* Insert before place_before, and after its predecessor in the list:
        Used to be:
           ... <--> place_after <--> place_before <-->
        Will be:
-          ... <--> place_after <--> superBlock <--> place_before <--> ...
+          ... <--> place_after <--> new <--> place_before <--> ...
        Note that this code will work even if there's only one block.
      */
 
-    place_after->_meta._pNxtSBlk = superBlock;
-    superBlock->_meta._pPrvSBlk = place_after;
-    superBlock->_meta._pNxtSBlk = place_before;
-    place_before->_meta._pPrvSBlk = superBlock;
+    place_after->_meta._pNxtSBlk = new;
+    new->_meta._pPrvSblk = place_after;
+    new->_meta._pNxtSBlk = place_before;
+    place_before->_meta._pPrvSblk = new;
 
     /* Verify that the new superblock belongs to the correct heap.
        This may be redundant, but good practice */
-    new->_pOwnerHeap = place_before->_pOwnerHeap;
+    new->_meta._pOwnerHeap = place_before->_meta._pOwnerHeap;
 }
