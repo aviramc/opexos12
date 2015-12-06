@@ -7,8 +7,8 @@ MYFLAGS = -m32 -g -O0 -Wall -fno-builtin-malloc -fno-builtin-calloc -fno-builtin
 #uncomment this line to compile the $(TARGET) with standatd memory allocator
 #MYFLAGS = -g -O0 -Wall
 
-MYLIBS = libmtmm.a
-# MYLIBS = libmtmmSSol.a
+# MYLIBS = libmtmm.a
+MYLIBS = libmtmmSSol.a
 
 
 all: $(TARGET) $(MYLIBS) bct
@@ -20,7 +20,7 @@ libmtmm.a: core_memory_allocator.c cpu_heap.c memory_allocator.c size_class.c
 	ranlib libmtmm.a
 
 
-$(TARGET): $(TARGET).c $(MYLIBS)
+$(TARGET): $(TARGET).c $(MYLIBS) libmtmm.a
 	$(CC) $(CCFLAGS) $(MYFLAGS) $(TARGET).c $(MYLIBS) -o $(TARGET) -lpthread -lm
 
 
