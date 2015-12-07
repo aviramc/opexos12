@@ -20,7 +20,7 @@ libmtmm.a: core_memory_allocator.c cpu_heap.c memory_allocator.c size_class.c
 	ranlib libmtmm.a
 
 
-$(TARGET): $(TARGET).c $(MYLIBS) libmtmm.a
+$(TARGET): $(TARGET).c $(MYLIBS)
 	$(CC) $(CCFLAGS) $(MYFLAGS) $(TARGET).c $(MYLIBS) -o $(TARGET) -lpthread -lm
 
 
