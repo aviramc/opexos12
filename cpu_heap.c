@@ -9,6 +9,8 @@
 #include "memory_allocator.h"
 #include "size_class.h"
 
+static size_class_t * _get_superblock_size_class(cpuheap_t *heap, superblock_t *superblock);
+
 /* remove a superblock from a given heap and sizeclass index and update heap level stats */
 void removeSuperblockFromHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
     /* Assuming the heap is locked */
@@ -45,6 +47,7 @@ void addSuperblockToHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
 void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     block_header_t *block = NULL;
     cpuheap_t *heap = pSb->_meta._pOwnerHeap;
+    size_class_t *size_class = NULL;
     size_t old_bytes_used = 0;
     size_t new_bytes_used = 0;
 
@@ -58,7 +61,15 @@ void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
 
-    return ((void *) block) + sizeof(block_header_t);
+    if (block != NULL) {
+        /* TODO: A correct reordering scheme should be used within the size class module */
+        size_class = _get_superblock_size_class(heap, pSb);
+        removeSuperBlock(size_class, pSb);
+        insertSuperBlock(size_class, pSb);
+        return ((void *) block) + sizeof(block_header_t);
+    }
+
+    return NULL;
 }
 
 void freeBlockFromCurrentHeap(block_header_t *pBlock) {
@@ -66,6 +77,7 @@ void freeBlockFromCurrentHeap(block_header_t *pBlock) {
     cpuheap_t *heap = NULL;
     size_t old_bytes_used = 0;
     size_t new_bytes_used = 0;
+    size_class_t *size_class = NULL;
 
     assert(NULL != superblock);
     heap = superblock->_meta._pOwnerHeap;
@@ -78,6 +90,11 @@ void freeBlockFromCurrentHeap(block_header_t *pBlock) {
     assert(heap->_bytesUsed >= old_bytes_used);
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
+
+    /* TODO: A correct reordering scheme should be used within the size class module */
+    size_class = _get_superblock_size_class(heap, superblock);
+    removeSuperBlock(size_class, superblock);
+    insertSuperBlock(size_class, superblock);
 }
 
 /* this is a boolean function to check the condition
@@ -97,25 +114,39 @@ superblock_t *findMostlyEmptySuperblock(cpuheap_t *pHeap){
              should be locked prior to calling to this function (otherwise
              race conditions may occur)
      */
-    size_class_t *current_size_class = NULL;
-    superblock_t *current_superblock = NULL;
-    superblock_t *min_superblock = NULL;
-    unsigned int i = 0;
-    double min_fullness = 2.0; /* More than 1 so that in the worst case a full superblock can be returned */
-    double current_fullnesss = 0;
+    return NULL;
+    /* size_class_t *current_size_class = NULL; */
+    /* superblock_t *current_superblock = NULL; */
+    /* superblock_t *min_superblock = NULL; */
+    /* unsigned int i = 0; */
+    /* double min_fullness = 2.0; /\* More than 1 so that in the worst case a full superblock can be returned *\/ */
+    /* double current_fullnesss = 0; */
 
-    for (i = 0; i < NUMBER_OF_SIZE_CLASSES; i++) {
-        current_size_class = &(pHeap->_sizeClasses[i]);
-        current_superblock = findMostlyEmptySuperblockSizeClass(current_size_class);
+    /* for (i = 0; i < NUMBER_OF_SIZE_CLASSES; i++) { */
+    /*     current_size_class = &(pHeap->_sizeClasses[i]); */
+    /*     current_superblock = findMostlyEmptySuperblockSizeClass(current_size_class); */
 
-        if (NULL != current_superblock) {
-            current_fullnesss = getFullness(current_superblock);
-            if (min_fullness > current_fullnesss) {
-                min_superblock = current_superblock;
-                min_fullness = current_fullnesss;
-            }
-        }
-    }
+    /*     if (NULL != current_superblock) { */
+    /*         current_fullnesss = getFullness(current_superblock); */
+    /*         if (min_fullness > current_fullnesss) { */
+    /*             min_superblock = current_superblock; */
+    /*             min_fullness = current_fullnesss; */
+    /*         } */
+    /*     } */
+    /* } */
 
-    return min_superblock;
+    /* return min_superblock; */
+}
+
+static size_class_t * _get_superblock_size_class(cpuheap_t *heap, superblock_t *superblock)
+{
+    size_t size_class_index = NUMBER_OF_SIZE_CLASSES;
+
+    assert(heap != NULL);
+    assert(superblock != NULL);
+    assert(heap == superblock->_meta._pOwnerHeap);
+
+    size_class_index = getSizeClassIndex(superblock->_meta._sizeClassBytes);
+
+    return &(heap->_sizeClasses[size_class_index]);
 }
