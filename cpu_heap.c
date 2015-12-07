@@ -109,7 +109,7 @@ superblock_t *findMostlyEmptySuperblock(cpuheap_t *pHeap){
         current_superblock = findMostlyEmptySuperblockSizeClass(current_size_class);
 
         if (NULL != current_superblock) {
-            current_fullnesss = getFullness(current_superblock)
+            current_fullnesss = getFullness(current_superblock);
             if (min_fullness > current_fullnesss) {
                 min_superblock = current_superblock;
                 min_fullness = current_fullnesss;
