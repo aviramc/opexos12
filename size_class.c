@@ -27,7 +27,7 @@ static superblock_t *find_least_full_than(size_class_t *sizeClass, double fullne
 static void place_superblock(superblock_t *new, superblock_t *place_before);
 
 /*
- * remove an superblock into the list
+ * remove a superblock from the list
  * assuming the superblock belongs to the sizeclass
  */
 void removeSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
@@ -35,8 +35,12 @@ void removeSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
     superblock_t *next = NULL;
 
     if (is_single(sizeClass, superBlock)) {
+        assert(sizeClass->_SBlkList._length == 1);
         sizeClass->_SBlkList._first = NULL;
+        sizeClass->_SBlkList._length = 0;
     } else {
+        assert(sizeClass->_SBlkList._length > 1);
+        sizeClass->_SBlkList._length--;
         previous = superBlock->_meta._pPrvSblk;
         next = superBlock->_meta._pNxtSBlk;
 
