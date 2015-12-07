@@ -43,7 +43,7 @@ void addSuperblockToHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
 }
 
 void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
-    void *block = NULL;
+    block_header_t *block = NULL;
     cpuheap_t *heap = pSb->_meta._pOwnerHeap;
     size_t old_bytes_used = 0;
     size_t new_bytes_used = 0;
@@ -58,7 +58,7 @@ void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
 
-    return block;
+    return ((void *) block) + sizeof(block_header_t);
 }
 
 void freeBlockFromCurrentHeap(block_header_t *pBlock) {
