@@ -105,6 +105,35 @@ superblock_t * findMostlyEmptySuperblockSizeClass(size_class_t *sizeClass)
     return sizeClass->_SBlkList._first->_meta._pPrvSblk;
 }
 
+void *allocateBlockFromSizeClass(size_class_t *sizeClass, superblock_t *superBlock)
+{
+    block_header_t *block = NULL;
+
+    block = popBlock(superBlock);
+
+    if (block != NULL) {
+        /* Found this to be actually much more efficient than a function that
+           moves the superblock further down the list
+         */
+        removeSuperBlock(sizeClass, superBlock);
+        insertSuperBlock(sizeClass, superBlock);
+        return block;
+    }
+
+    return NULL;
+}
+
+void freeBlockFromCurrentSizeClass(size_class_t *sizeClass, superblock_t *superBlock, block_header_t *block)
+{
+    assert(block->_pOwner == superBlock);
+    pushBlock(superBlock, block);
+    /* Found this to be actually much more efficient than a function that
+       moves the superblock further up the list (if needed)
+    */
+    removeSuperBlock(sizeClass, superBlock);
+    insertSuperBlock(sizeClass, superBlock);
+}
+
 void printSizeClass(size_class_t *sizeClass){
     int i;
     superblock_t *p=sizeClass->_SBlkList._first;

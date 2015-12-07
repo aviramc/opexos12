@@ -52,9 +52,10 @@ void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     size_t new_bytes_used = 0;
 
     assert(NULL != heap);
+    size_class = _get_superblock_size_class(heap, pSb);
 
     old_bytes_used = getBytesUsed(pSb);
-    block = popBlock(pSb);
+    block = allocateBlockFromSizeClass(size_class, pSb);
     new_bytes_used = getBytesUsed(pSb);
 
     assert(heap->_bytesUsed >= old_bytes_used);
@@ -62,10 +63,6 @@ void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     heap->_bytesUsed += new_bytes_used;
 
     if (block != NULL) {
-        /* TODO: A correct reordering scheme should be used within the size class module */
-        size_class = _get_superblock_size_class(heap, pSb);
-        removeSuperBlock(size_class, pSb);
-        insertSuperBlock(size_class, pSb);
         return ((void *) block) + sizeof(block_header_t);
     }
 
@@ -82,19 +79,15 @@ void freeBlockFromCurrentHeap(block_header_t *pBlock) {
     assert(NULL != superblock);
     heap = superblock->_meta._pOwnerHeap;
     assert(NULL != heap);
+    size_class = _get_superblock_size_class(heap, superblock);
 
     old_bytes_used = getBytesUsed(superblock);
-    pushBlock(superblock, pBlock);
+    freeBlockFromCurrentSizeClass(size_class, superblock, pBlock);
     new_bytes_used = getBytesUsed(superblock);
 
     assert(heap->_bytesUsed >= old_bytes_used);
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
-
-    /* TODO: A correct reordering scheme should be used within the size class module */
-    size_class = _get_superblock_size_class(heap, superblock);
-    removeSuperBlock(size_class, superblock);
-    insertSuperBlock(size_class, superblock);
 }
 
 /* this is a boolean function to check the condition
