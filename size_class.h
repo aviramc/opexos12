@@ -4,6 +4,7 @@
 
 void removeSuperBlock(size_class_t *sizeClass, superblock_t *superBlock);
 void insertSuperBlock(size_class_t *sizeClass, superblock_t *superBlock);
+superblock_t * findMostlyEmptySuperblockSizeClass(size_class_t *sizeClass);
 
 size_t size_class_used_bytes(size_class_t *sizeClass);
 

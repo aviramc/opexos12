@@ -92,6 +92,30 @@ bool isHeapUnderUtilized(cpuheap_t *pHeap) {
 
 
 superblock_t *findMostlyEmptySuperblock(cpuheap_t *pHeap){
-    /* TODO: Do! */
-    return NULL;
+    /* Assuming the heap is locked */
+    /* TODO: If size class locks are used, probably all of the size classes' locks
+             should be locked prior to calling to this function (otherwise
+             race conditions may occur)
+     */
+    size_class_t *current_size_class = NULL;
+    superblock_t *current_superblock = NULL;
+    superblock_t *min_superblock = NULL;
+    unsigned int i = 0;
+    double min_fullness = 2.0; /* More than 1 so that in the worst case a full superblock can be returned */
+    double current_fullnesss = 0;
+
+    for (i = 0; i < NUMBER_OF_SIZE_CLASSES; i++) {
+        current_size_class = &(pHeap->_sizeClasses[i]);
+        current_superblock = findMostlyEmptySuperblockSizeClass(current_size_class);
+
+        if (NULL != current_superblock) {
+            current_fullnesss = getFullness(current_superblock)
+            if (min_fullness > current_fullnesss) {
+                min_superblock = current_superblock;
+                min_fullness = current_fullnesss;
+            }
+        }
+    }
+
+    return min_superblock;
 }

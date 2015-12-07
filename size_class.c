@@ -5,7 +5,7 @@
  *
  */
 
-
+/* TODO: Re-ordering of superblocks when poping/push blocks! */
 
 #include <stdlib.h>
 #include <assert.h>
@@ -85,7 +85,21 @@ superblock_t *findAvailableSuperblock(size_class_t *sizeClass) {
     return NULL;
 }
 
+/* find the mostly empty superblock in the size class */
+superblock_t * findMostlyEmptySuperblockSizeClass(size_class_t *sizeClass)
+{
+    /* assuming heap/size class is locked */
 
+    /* If there are no superblocks, return nothing. */
+    if (sizeClass->_SBlkList._first == NULL) {
+        return NULL;
+    }
+
+    /* Otherwise, since all superblocks are ordered, the least used should
+       be the last one. The list is circular, so reaching the last one
+       is easy :) */
+    return sizeClass->_SBlkList._first->_meta._pPrvSblk;
+}
 
 void printSizeClass(size_class_t *sizeClass){
     int i;
