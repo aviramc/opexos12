@@ -85,7 +85,7 @@ void * malloc(size_t sz) {
 	void *p;
 
 
-	printf("TODO: remove this debugging output\n");
+	/* printf("TODO: remove this debugging output\n"); */
 
 
 	/* #1 */
