@@ -14,7 +14,7 @@ MYLIBS = libmtmm.a
 all: $(TARGET) $(MYLIBS) bct
 
 
-libmtmm.a: core_memory_allocator.c cpu_heap.c memory_allocator.c size_class.c 
+libmtmm.a: core_memory_allocator.c cpu_heap.c memory_allocator.c size_class.c assert_static.h
 	$(CC) $(MYFLAGS) -c core_memory_allocator.c cpu_heap.c memory_allocator.c size_class.c 
 	ar rcu libmtmm.a core_memory_allocator.o cpu_heap.o memory_allocator.o size_class.o 
 	ranlib libmtmm.a
