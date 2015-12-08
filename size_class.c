@@ -67,6 +67,7 @@ void insertSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
     place_before = find_least_full_than(sizeClass, getFullness(superBlock));
     assert(place_before != NULL);
     place_superblock(superBlock, place_before);
+    sizeClass->_SBlkList._length++;
 }
 
 /* find available superblock */
