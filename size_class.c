@@ -8,12 +8,12 @@
 /* TODO: Re-ordering of superblocks when poping/push blocks! */
 
 #include <stdlib.h>
-#include <assert.h>
 #include <stdio.h>
 #include <math.h>
 #include <errno.h>
 #include <stdbool.h>
 #include "memory_allocator.h"
+#include "assert_static.h"
 
 /* return true if a superblock is the only one in the list */
 static bool is_single(size_class_t *size_class, superblock_t *superblock);
@@ -60,6 +60,7 @@ void insertSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
     superblock_t * place_before = NULL;
 
     if (sizeClass->_SBlkList._first == NULL) {
+        assert(sizeClass->_SBlkList._length == 0);
         init_superblock_list(sizeClass, superBlock);
         return;
     }

@@ -4,10 +4,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include "memory_allocator.h"
 #include "size_class.h"
+#include "assert_static.h"
 
 static size_class_t * _get_superblock_size_class(cpuheap_t *heap, superblock_t *superblock);
 
