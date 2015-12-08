@@ -6,7 +6,7 @@
  */
 
 #include "memory_allocator.h"
-
+#include "assert_static.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -111,11 +111,12 @@ void * malloc(size_t sz) {
 
 	/* #2 */
 	heapIndex = getHeapID();
+        assert(heapIndex != GEREAL_HEAP_IX);
 
 
 
 	/* #3 */
-	pthread_mutex_lock(&heapLocks[heapIndex]);
+	assert(pthread_mutex_lock(&heapLocks[heapIndex]) == 0);
 
 
 
@@ -128,24 +129,28 @@ void * malloc(size_t sz) {
 
 
 	/* #5 && #6 */
-	if (!pSb
-            && (pSb =
-                findAvailableSuperblock(/* search in general heap */
-                                        &(memory._heaps[GEREAL_HEAP_IX]._sizeClasses[sizeClassIndex])))) {
+	if (!pSb) {
+            /* AC: Added a global heap lock here, otherwise there's a race condition on it */
+            assert(pthread_mutex_lock(&heapLocks[GEREAL_HEAP_IX]) == 0);
+            pSb = findAvailableSuperblock(/* search in general heap */
+                                          &(memory._heaps[GEREAL_HEAP_IX]._sizeClasses[sizeClassIndex]));
 
-            /* superblock of relevant size class was found in general heap
-             * relocate it to private heap step #10
-             */
+            if (pSb) {
+                /* superblock of relevant size class was found in general heap
+                 * relocate it to private heap step #10
+                 */
 
-            /* #11 #13 */
-            pthread_mutex_lock(&(pSb->_meta._sbLock));
-            removeSuperblockFromHeap(&(memory._heaps[GEREAL_HEAP_IX]),
-                                     sizeClassIndex, pSb);
+                /* #11 #13 */
+                assert(pthread_mutex_lock(&(pSb->_meta._sbLock)) == 0);
+                removeSuperblockFromHeap(&(memory._heaps[GEREAL_HEAP_IX]),
+                                         sizeClassIndex, pSb);
 
-            /* #12 #14 */
-            addSuperblockToHeap(&(memory._heaps[heapIndex]), sizeClassIndex, pSb);
-            pthread_mutex_unlock(&(pSb->_meta._sbLock));
-
+                /* #12 #14 */
+                addSuperblockToHeap(&(memory._heaps[heapIndex]), sizeClassIndex, pSb);
+                assert(pSb->_meta._pOwnerHeap == &(memory._heaps[heapIndex]));
+                assert(pthread_mutex_unlock(&(pSb->_meta._sbLock)) == 0);
+            }
+            assert(pthread_mutex_unlock(&heapLocks[GEREAL_HEAP_IX]) == 0);
 	}
 
 	/* #7 */
@@ -174,7 +179,7 @@ void * malloc(size_t sz) {
 	p = allocateBlockFromCurrentHeap(pSb);
 
  finish:
-	pthread_mutex_unlock(&heapLocks[heapIndex]);
+	assert(pthread_mutex_unlock(&heapLocks[heapIndex]) == 0);
 
 	return p;
 
@@ -223,7 +228,7 @@ void free(void *ptr) {
 	}
 
 	superblock_t *pSb = pBlock->_pOwner;
-	pthread_mutex_lock(&(pSb->_meta._sbLock));
+	assert(pthread_mutex_lock(&(pSb->_meta._sbLock)) == 0);
 
 	/* #3 */
 	pHeap = pSb->_meta._pOwnerHeap;
@@ -231,18 +236,16 @@ void free(void *ptr) {
 
 	/* #4 */
 
-	pthread_mutex_unlock(&(pSb->_meta._sbLock));
-	pthread_mutex_lock(&heapLocks[pHeap->_CpuId]);
+	assert(pthread_mutex_lock(&heapLocks[pHeap->_CpuId]) == 0);
 
-	if (pHeap!= pSb->_meta._pOwnerHeap){
+	if (pHeap != pSb->_meta._pOwnerHeap){
 		/* we've locked the wrong heap - the superblock has moved
 		 * unlock and relock the uptodate heap*/
-		pthread_mutex_unlock(&heapLocks[pHeap->_CpuId]);
-		pthread_mutex_lock(&(pSb->_meta._sbLock));
-		pHeap=pSb->_meta._pOwnerHeap;
-		pthread_mutex_unlock(&(pSb->_meta._sbLock));
-		pthread_mutex_lock(&heapLocks[pHeap->_CpuId]);
-
+            assert(pthread_mutex_unlock(&heapLocks[pHeap->_CpuId]) == 0);
+            assert(pthread_mutex_lock(&(pSb->_meta._sbLock)) == 0);
+            pHeap=pSb->_meta._pOwnerHeap;
+            assert(pthread_mutex_unlock(&(pSb->_meta._sbLock)) == 0);
+            assert(pthread_mutex_lock(&heapLocks[pHeap->_CpuId]) == 0);
 	}
 
 
@@ -252,11 +255,13 @@ void free(void *ptr) {
 	/* #5, #6, #7 */
 	freeBlockFromCurrentHeap(pBlock);
 
+	assert(pthread_mutex_unlock(&(pSb->_meta._sbLock)) == 0);
 
 	/* #8 */
 	if (pHeap->_CpuId == GEREAL_HEAP_IX) {
-		pthread_mutex_unlock(&heapLocks[pHeap->_CpuId]);
-		return;
+            assert(pthread_mutex_unlock(&(pSb->_meta._sbLock)) == 0);
+            assert(pthread_mutex_unlock(&heapLocks[pHeap->_CpuId]) == 0);
+            return;
 	}
 	/* #9 */
 
@@ -266,27 +271,30 @@ void free(void *ptr) {
 
 		/* #10 */
 		if (pSbToRelocate) {
-			size_t sizeClassIndex = getSizeClassIndex(
-					pSbToRelocate->_meta._sizeClassBytes);
+                    assert(pthread_mutex_lock(&heapLocks[GEREAL_HEAP_IX]) == 0);
+                    size_t sizeClassIndex = getSizeClassIndex(
+                                                              pSbToRelocate->_meta._sizeClassBytes);
 
 
-			/* #11 #12 */
-			pthread_mutex_lock(&(pSbToRelocate->_meta._sbLock));
-			removeSuperblockFromHeap(pHeap, sizeClassIndex, pSbToRelocate);
+                    /* #11 #12 */
+                    assert(pthread_mutex_lock(&(pSbToRelocate->_meta._sbLock)) == 0);
+                    removeSuperblockFromHeap(pHeap, sizeClassIndex, pSbToRelocate);
 
-			/* #11 #12 */
+                    /* #11 #12 */
 
-			addSuperblockToHeap(&(memory._heaps[GEREAL_HEAP_IX]),
+                    addSuperblockToHeap(&(memory._heaps[GEREAL_HEAP_IX]),
 					sizeClassIndex, pSbToRelocate);
-			pthread_mutex_unlock(&(pSbToRelocate->_meta._sbLock));
-			memory._heaps[GEREAL_HEAP_IX]._CpuId=0;
+                    assert(pthread_mutex_unlock(&(pSbToRelocate->_meta._sbLock)) == 0);
+
+                    memory._heaps[GEREAL_HEAP_IX]._CpuId=0;
+                    assert(pthread_mutex_unlock(&heapLocks[GEREAL_HEAP_IX]) == 0);
 
 
 		}
 	}
 
 	/* #13 */
-	pthread_mutex_unlock(&heapLocks[pHeap->_CpuId]);
+	assert(pthread_mutex_unlock(&heapLocks[pHeap->_CpuId]) == 0);
 	return;
 
 }
