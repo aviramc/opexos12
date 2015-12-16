@@ -26,6 +26,13 @@ static superblock_t *find_least_full_than(size_class_t *sizeClass, double fullne
 /* place a new superblock before another superblock in the list */
 static void place_superblock(superblock_t *new, superblock_t *place_before);
 
+/* Functions to relocate a superblock in the size class, in two cases:
+     - A block was allocated, the superblocck more full, and should be relocated back.
+     - A block was freed, the superblock is less full, and should be relocated ahead.
+*/
+static void relocateSuperBlockBack(size_class_t *size_class, superblock_t *superblock);
+static void relocateSuperBlockAhead(size_class_t *size_class, superblock_t *superblock);
+
 /*
  * remove a superblock from the list
  * assuming the superblock belongs to the sizeclass
@@ -113,11 +120,7 @@ void *allocateBlockFromSizeClass(size_class_t *sizeClass, superblock_t *superBlo
     block = popBlock(superBlock);
 
     if (block != NULL) {
-        /* Found this to be actually much more efficient than a function that
-           moves the superblock further down the list
-         */
-        removeSuperBlock(sizeClass, superBlock);
-        insertSuperBlock(sizeClass, superBlock);
+        relocateSuperBlockBack(sizeClass, superBlock);
         return block;
     }
 
@@ -128,11 +131,7 @@ void freeBlockFromCurrentSizeClass(size_class_t *sizeClass, superblock_t *superB
 {
     assert(block->_pOwner == superBlock);
     pushBlock(superBlock, block);
-    /* Found this to be actually much more efficient than a function that
-       moves the superblock further up the list (if needed)
-    */
-    removeSuperBlock(sizeClass, superBlock);
-    insertSuperBlock(sizeClass, superBlock);
+    relocateSuperBlockAhead(sizeClass, superBlock);
 }
 
 void printSizeClass(size_class_t *sizeClass){
@@ -218,4 +217,22 @@ static void place_superblock(superblock_t *new, superblock_t *place_before)
     /* Verify that the new superblock belongs to the correct heap.
        This may be redundant, but good practice */
     new->_meta._pOwnerHeap = place_before->_meta._pOwnerHeap;
+}
+
+static void relocateSuperBlockBack(size_class_t *size_class, superblock_t *superblock)
+{
+    /* Found this to be actually much more efficient than a function that
+       moves the superblock further down the list
+    */
+    removeSuperBlock(size_class, superblock);
+    insertSuperBlock(size_class, superblock);
+}
+
+static void relocateSuperBlockAhead(size_class_t *size_class, superblock_t *superblock)
+{
+    /* Found this to be actually much more efficient than a function that
+       moves the superblock further down the list
+    */
+    removeSuperBlock(size_class, superblock);
+    insertSuperBlock(size_class, superblock);
 }

@@ -39,8 +39,6 @@ superblock_t *findMostlyEmptySuperblock(cpuheap_t *pHeap);
 superblock_t *findAvailableSuperblock(size_class_t *sizeClass);
 
 
-void relocateSuperBlockBack(size_class_t *sizeClass, superblock_t *superBlock);
-
 void printSizeClass(size_class_t *sizeClass);
 
 size_t getSizeClassIndex(size_t size);
