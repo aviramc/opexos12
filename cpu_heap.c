@@ -18,10 +18,6 @@ void removeSuperblockFromHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *p
     size_class_t *size_class = &(heap->_sizeClasses[sizeClass_ix]);
     size_t superblock_bytes_used = getBytesUsed(pSb);
 
-    assert(pSb->_meta._pOwnerHeap == heap);
-    assert(heap->_bytesAvailable >= SUPERBLOCK_SIZE);
-    assert(heap->_bytesUsed >= superblock_bytes_used);
-
     removeSuperBlock(size_class, pSb);
     pSb->_meta._pOwnerHeap = NULL;
 
@@ -58,7 +54,6 @@ void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     block = allocateBlockFromSizeClass(size_class, pSb);
     new_bytes_used = getBytesUsed(pSb);
 
-    assert(heap->_bytesUsed >= old_bytes_used);
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
 
@@ -85,7 +80,6 @@ void freeBlockFromCurrentHeap(block_header_t *pBlock) {
     freeBlockFromCurrentSizeClass(size_class, superblock, pBlock);
     new_bytes_used = getBytesUsed(superblock);
 
-    assert(heap->_bytesUsed >= old_bytes_used);
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
 }
@@ -107,28 +101,27 @@ superblock_t *findMostlyEmptySuperblock(cpuheap_t *pHeap){
              should be locked prior to calling to this function (otherwise
              race conditions may occur)
      */
-    return NULL;
-    /* size_class_t *current_size_class = NULL; */
-    /* superblock_t *current_superblock = NULL; */
-    /* superblock_t *min_superblock = NULL; */
-    /* unsigned int i = 0; */
-    /* double min_fullness = 2.0; /\* More than 1 so that in the worst case a full superblock can be returned *\/ */
-    /* double current_fullnesss = 0; */
+    size_class_t *current_size_class = NULL;
+    superblock_t *current_superblock = NULL;
+    superblock_t *min_superblock = NULL;
+    unsigned int i = 0;
+    double min_fullness = 2.0; /* More than 1 so that in the worst case a full superblock can be returned */
+    double current_fullnesss = 0;
 
-    /* for (i = 0; i < NUMBER_OF_SIZE_CLASSES; i++) { */
-    /*     current_size_class = &(pHeap->_sizeClasses[i]); */
-    /*     current_superblock = findMostlyEmptySuperblockSizeClass(current_size_class); */
+    for (i = 0; i < NUMBER_OF_SIZE_CLASSES; i++) {
+        current_size_class = &(pHeap->_sizeClasses[i]);
+        current_superblock = findMostlyEmptySuperblockSizeClass(current_size_class);
 
-    /*     if (NULL != current_superblock) { */
-    /*         current_fullnesss = getFullness(current_superblock); */
-    /*         if (min_fullness > current_fullnesss) { */
-    /*             min_superblock = current_superblock; */
-    /*             min_fullness = current_fullnesss; */
-    /*         } */
-    /*     } */
-    /* } */
+        if (NULL != current_superblock) {
+            current_fullnesss = getFullness(current_superblock);
+            if (min_fullness > current_fullnesss) {
+                min_superblock = current_superblock;
+                min_fullness = current_fullnesss;
+            }
+        }
+    }
 
-    /* return min_superblock; */
+    return min_superblock;
 }
 
 static size_class_t * _get_superblock_size_class(cpuheap_t *heap, superblock_t *superblock)
