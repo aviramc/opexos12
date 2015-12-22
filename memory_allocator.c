@@ -34,7 +34,7 @@ int getHeapID() {
 	int heapid;
 	pthread_t self;
 	self = pthread_self();
-	heapid = (self % 7) % 2;
+	heapid = self % 2;
 	heapid++; /* 0 is reserved for general heap so we add 1 */
 	return heapid;
 
