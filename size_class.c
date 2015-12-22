@@ -42,6 +42,7 @@ void removeSuperBlock(size_class_t *sizeClass, superblock_t *superBlock) {
     superblock_t *next = NULL;
 
     if (is_single(sizeClass, superBlock)) {
+        assert(sizeClass->_SBlkList._length == 1);
         sizeClass->_SBlkList._first = NULL;
         sizeClass->_SBlkList._length = 0;
     } else {
@@ -166,6 +167,7 @@ static bool is_single(size_class_t *size_class, superblock_t *superblock)
 {
     if ((superblock->_meta._pPrvSblk == superblock->_meta._pNxtSBlk) &&
         (superblock->_meta._pPrvSblk == superblock)) {
+        assert(size_class->_SBlkList._first == superblock);
         return true;
     }
     return false;
