@@ -22,7 +22,7 @@ static void init_superblock_list(size_class_t *sizeClass, superblock_t *first);
 /* find the first block that is less full than fullness
    if there's no such block, this will return the head of the list
  */
-static superblock_t *find_least_full_than(size_class_t *sizeClass, double fullness);
+static superblock_t *find_least_full_than(size_class_t *sizeClass, unsigned short fullness);
 /* place a new superblock before another superblock in the list */
 static void place_superblock(superblock_t *new, superblock_t *place_before);
 
@@ -181,7 +181,7 @@ static void init_superblock_list(size_class_t *sizeClass, superblock_t *first)
     first->_meta._pPrvSblk = first;
 }
 
-static superblock_t *find_least_full_than(size_class_t *sizeClass, double fullness)
+static superblock_t *find_least_full_than(size_class_t *sizeClass, unsigned short fullness)
 {
     unsigned int i = 0;
     superblock_t *found = NULL;
