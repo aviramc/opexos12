@@ -13,11 +13,16 @@ static size_class_t * _get_superblock_size_class(cpuheap_t *heap, superblock_t *
 
 /* remove a superblock from a given heap and sizeclass index and update heap level stats */
 void removeSuperblockFromHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
-    /* Assuming the heap is locked */
+    /* Assuming the heap is locked and that the superblock is locked */
     /* TODO: when size class lock is available, it should be locked here or on the calling side */
     size_class_t *size_class = &(heap->_sizeClasses[sizeClass_ix]);
     size_t superblock_bytes_used = getBytesUsed(pSb);
 
+    assert(sizeClass_ix >= 0);
+    assert(sizeClass_ix < NUMBER_OF_SIZE_CLASSES);
+    assert(pSb->_meta._pOwnerHeap == heap);
+    assert(heap->_bytesAvailable >= SUPERBLOCK_SIZE);
+    assert(heap->_bytesUsed >= superblock_bytes_used);    
     removeSuperBlock(size_class, pSb);
     pSb->_meta._pOwnerHeap = NULL;
 
@@ -28,7 +33,7 @@ void removeSuperblockFromHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *p
 
 /* add a superblock to a given heap and sizeclass index and update heap level stats */
 void addSuperblockToHeap(cpuheap_t *heap, int sizeClass_ix, superblock_t *pSb){
-    /* Assuming the heap is locked */
+    /* Assuming the heap is locked and that the superblock is locked */
     /* TODO: when size class lock is available, it should be locked here or on the calling side */
     size_class_t *size_class = &(heap->_sizeClasses[sizeClass_ix]);
 
@@ -54,6 +59,7 @@ void *allocateBlockFromCurrentHeap(superblock_t *pSb) {
     block = allocateBlockFromSizeClass(size_class, pSb);
     new_bytes_used = getBytesUsed(pSb);
 
+    assert(heap->_bytesUsed >= old_bytes_used);
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
 
@@ -80,6 +86,7 @@ void freeBlockFromCurrentHeap(block_header_t *pBlock) {
     freeBlockFromCurrentSizeClass(size_class, superblock, pBlock);
     new_bytes_used = getBytesUsed(superblock);
 
+    assert(heap->_bytesUsed >= old_bytes_used);
     heap->_bytesUsed -= old_bytes_used;
     heap->_bytesUsed += new_bytes_used;
 }
