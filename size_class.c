@@ -231,7 +231,7 @@ static void relocateSuperBlockBack(size_class_t *size_class, superblock_t *super
 static void relocateSuperBlockAhead(size_class_t *size_class, superblock_t *superblock)
 {
     /* Found this to be actually much more efficient than a function that
-       moves the superblock further down the list
+       moves the superblock further up the list
     */
     removeSuperBlock(size_class, superblock);
     insertSuperBlock(size_class, superblock);
