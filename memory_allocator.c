@@ -400,14 +400,6 @@ block_header_t *popBlock(superblock_t *pSb) {
 
 }
 
-void *allocateFromSuperblock(superblock_t *pSb) {
-	block_header_t *block = popBlock(pSb);
-
-	// TODO: fill here - relocate super block if needed
-
-	return (void*) (block + 1);
-
-}
 /**
  * push a block to the top of the stack.
  * caller must call the relocateSuperBlockAhead on the owning heap to update the superblock's position
